@@ -17,6 +17,12 @@ func coreTests() async {
         "on another screen it follows that screen's frame",
         BarGeometry.frame(on: second, edge: .top) == CGRect(x: 1470, y: 1200, width: 2560, height: 40))
 
+    // The cover hides the native bar that slides down, not the first points of the windows under it: a focus border
+    // (dotborder) straddles its window's top edge, which the 40-point strip used to cover when the pointer went up.
+    check("the cover reaches 2 points below a 32-point native bar", BarGeometry.coverHeight(menuBar: 32) == 34)
+    check("...never taller than the bar", BarGeometry.coverHeight(menuBar: 60) == BarGeometry.height)
+    check("...and a plain 24-point bar gets 26", BarGeometry.coverHeight(menuBar: 24) == 26)
+
     // The command runner.
     let runner = CommandRunner()
     let echo = await runner.run("/bin/echo", ["hello"], timeout: 2)

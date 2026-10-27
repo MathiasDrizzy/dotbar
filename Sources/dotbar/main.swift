@@ -97,7 +97,7 @@ struct BarView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // The cover is behind every box (the rc's first bracket).
-        .background { CoverView(model: cover) }
+        .background(alignment: cover.alignment) { CoverView(model: cover).frame(height: cover.height) }
         .task(id: left) {
             frontApp.setNameWidth(left.nameWidth)
             workspaces.cap = left.cap

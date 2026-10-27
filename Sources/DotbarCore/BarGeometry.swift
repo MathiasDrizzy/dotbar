@@ -11,6 +11,10 @@ public enum BarGeometry {
     /// The bar's height in points: SketchyBar's, so the boxes keep their size and the cover hides the same strip.
     public static let height: CGFloat = 40
 
+    /// How tall the cover is: the native menu bar that slides down plus 2 points, never more than the bar. Taller, it hid
+    /// the first points of the windows under the bar, where a focus border has its top edge.
+    public static func coverHeight(menuBar: CGFloat) -> CGFloat { min(height, menuBar + 2) }
+
     /// The bar's frame on a screen whose full frame is `screen`: the whole width, `height` tall, at `edge`.
     public static func frame(on screen: CGRect, edge: BarEdge, height: CGFloat = BarGeometry.height) -> CGRect {
         let y = edge == .top ? screen.maxY - height : screen.minY

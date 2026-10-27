@@ -28,6 +28,10 @@ final class CoverModel {
     private(set) var shown = false
     private(set) var picture: CGImage?
     private(set) var pictureScale: CGFloat = 2
+    /// How tall the cover is (see BarGeometry.coverHeight): the picture is cut to it and the view is sized to it.
+    private(set) var height: CGFloat = BarGeometry.height
+    /// The cover sits at the screen edge the bar is on.
+    var alignment: Alignment { edge == .top ? .top : .bottom }
 
     /// Apps whose panels and menus bring the native bar down: Control Center and Vorssaint (colors.sh MENU_EXTRA_BUNDLE).
     static let popupBundles = ["com.apple.controlcenter", "com.vorssaint.utils"]
@@ -242,8 +246,11 @@ final class CoverModel {
             allowClipping: (options[.allowClipping] as? NSNumber)?.boolValue ?? true)
         let fill = (options[.fillColor] as? NSColor)?.usingColorSpace(.sRGB)
         let size = screen.frame.size
-        let strip = CGRect(
-            x: 0, y: edge == .top ? 0 : size.height - BarGeometry.height, width: size.width, height: BarGeometry.height)
+        // The native bar's height: the notch's safe area, the gap the visible frame leaves, or a plain bar's thickness.
+        let nativeBar = max(screen.safeAreaInsets.top, screen.frame.maxY - screen.visibleFrame.maxY, NSStatusBar.system.thickness)
+        let height = edge == .top ? BarGeometry.coverHeight(menuBar: nativeBar) : BarGeometry.height
+        self.height = height
+        let strip = CGRect(x: 0, y: edge == .top ? 0 : size.height - height, width: size.width, height: height)
         let key = WallpaperKey(
             url: url, modified: (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate,
             scaling: scaling,
