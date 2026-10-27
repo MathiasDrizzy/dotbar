@@ -6,7 +6,7 @@ import SwiftUI
 
 extension Theme {
     /// The front app's block and its arrow (colors.sh APP_BLOCK).
-    static let appBlock = Color(hex: 0xa6da95)
+    static let appBlock = Color(hex: style.palette.appBlock)
     /// The name's box: a short name ("Ghostty", "Discord") fits; a longer one ("Google Chrome") slides inside it, as
     /// filling the whole box it touched the arrow and the pill's end.
     static let appNameWidth: CGFloat = 72

@@ -1,20 +1,23 @@
+import DotbarCore
 import SwiftUI
 
-/// The bar's look, taken from mac/config/sketchybar/colors.sh (Catppuccin Macchiato) so both bars match while they live
-/// side by side.
+/// The bar's look: the colors and glyphs of the bar chosen with `defaults write dev.dotfiles.dotbar bar -string <id>`
+/// (read once, at launch; see `BarCatalog`). Sizes and fonts are the same for every bar.
 enum Theme {
-    static let base = Color(hex: 0x24273a)
-    static let text = Color(hex: 0xcad3f5)
-    static let mauve = Color(hex: 0xc6a0f6)
-    static let blue = Color(hex: 0x8aadf4)
-    static let surface1 = Color(hex: 0x494d64)
-    static let overlay0 = Color(hex: 0x6e738d)
-    static let surface0 = Color(hex: 0x363a4f)
-    static let red = Color(hex: 0xed8796)
-    static let yellow = Color(hex: 0xeed49f)
-    static let pink = Color(hex: 0xf5bde6)
+    static let style = BarCatalog.resolve(UserDefaults.standard.string(forKey: "bar"))
+
+    static let base = Color(hex: style.palette.base)
+    static let text = Color(hex: style.palette.text)
+    static let mauve = Color(hex: style.palette.mauve)
+    static let blue = Color(hex: style.palette.blue)
+    static let surface1 = Color(hex: style.palette.surface1)
+    static let overlay0 = Color(hex: style.palette.overlay0)
+    static let surface0 = Color(hex: style.palette.surface0)
+    static let red = Color(hex: style.palette.red)
+    static let yellow = Color(hex: style.palette.yellow)
+    static let pink = Color(hex: style.palette.pink)
     /// A box at rest: solid, the color the boxes show on screen.
-    static let barColor = Color(hex: 0x242639)
+    static let barColor = Color(hex: style.palette.barColor)
 
     static let pillHeight: CGFloat = 26
     static let pillRadius: CGFloat = 5

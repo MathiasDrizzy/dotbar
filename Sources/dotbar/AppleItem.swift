@@ -5,9 +5,9 @@ import SwiftUI
 
 extension Theme {
     /// The Apple block (colors.sh APPLE_*): peach at rest, yellow under the pointer, red while its menu is open.
-    static let appleRest = Color(hex: 0xf5a97f)
-    static let appleHover = Color(hex: 0xeed49f)
-    static let appleOpen = Color(hex: 0xed8796)
+    static let appleRest = Color(hex: style.palette.appleRest)
+    static let appleHover = Color(hex: style.palette.appleHover)
+    static let appleOpen = Color(hex: style.palette.appleOpen)
     /// The Apple logo is U+F8FF of the system font (the app font has none), at APPLE_SIZE.
     static let appleFont = Font.system(size: 18)
     /// A popup entry: SketchyBar gave each one the bar's height.

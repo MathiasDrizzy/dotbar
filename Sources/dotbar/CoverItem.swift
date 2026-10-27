@@ -5,7 +5,7 @@ import SwiftUI
 
 extension Theme {
     /// The cover while no picture of the wallpaper is ready: Catppuccin Macchiato's crust, cover.sh's fallback.
-    static let crust = Color(hex: 0x181926)
+    static let crust = Color(hex: style.palette.crust)
 }
 
 /// The cover (cover.sh and the rc's `cover` bracket). With the menu bar set to hide always, the system slides its own bar

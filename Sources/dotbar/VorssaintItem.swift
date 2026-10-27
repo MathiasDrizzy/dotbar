@@ -5,7 +5,7 @@ import SwiftUI
 
 extension Theme {
     /// The planet of Vorssaint's own icon (Nerd Font fae-planet).
-    static let vorssaintGlyph = "\u{E22E}"
+    static let vorssaintGlyph = style.glyphs.vorssaint
     static let vorssaintBundle = "com.vorssaint.utils"
     /// The least widths of the boxes right of Vorssaint's (battery, date, time): SketchyBar's widths, the narrowest that
     /// fit "100%", a date and a time. They only ever widen, by VorssaintAlign's shares: narrower ones (before the extra

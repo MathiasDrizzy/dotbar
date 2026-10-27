@@ -5,9 +5,9 @@ import SwiftUI
 
 extension Theme {
     /// The Spotify logo while playing (GREEN of colors.sh); paused it is yellow.
-    static let spotifyGreen = Color(hex: 0xa6da95)
+    static let spotifyGreen = Color(hex: style.palette.spotifyGreen)
     /// fa-spotify (SPOTIFY of icons.sh), at SPOTIFY_SIZE in bold.
-    static let spotifyGlyph = "\u{F1BC}"
+    static let spotifyGlyph = style.glyphs.spotify
     static let spotifyFont = Font.custom(fontName, size: 20).bold()
     /// The room the logo takes at that size, as SketchyBar measured it.
     static let spotifyWidth: CGFloat = 19

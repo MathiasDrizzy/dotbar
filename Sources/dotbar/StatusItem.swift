@@ -155,11 +155,11 @@ struct StatusView: View {
                     action: { open("x-apple.systempreferences:com.apple.Battery-Settings.extension") })
             }
             IconLabelBox(
-                id: "date", icon: "\u{F00F0}", iconColor: Theme.red, label: ClockText.date(model.now),
+                id: "date", icon: Theme.style.glyphs.date, iconColor: Theme.red, label: ClockText.date(model.now),
                 width: Theme.leastSpreadWidths[1] + spread[1],
                 action: { NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Calendar.app")) })
             IconLabelBox(
-                id: "clock", icon: "\u{F0954}", iconColor: Theme.yellow, label: ClockText.time(model.now), labelFont: Theme.textFont,
+                id: "clock", icon: Theme.style.glyphs.clock, iconColor: Theme.yellow, label: ClockText.time(model.now), labelFont: Theme.textFont,
                 width: Theme.leastSpreadWidths[2] + spread[2])
             // Red while there is no network: what control.sh showed for a Wi-Fi without an address. AppGlyph centers the
             // ligature's ink as SketchyBar did (a Text centers its advance, 3.5 points off).
