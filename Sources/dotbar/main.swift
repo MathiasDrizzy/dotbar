@@ -131,6 +131,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var media = MediaModel(runner: runner, mediaControl: mediaControlPath())
     private let frontApp = FrontAppModel()
     private lazy var cover = CoverModel(edge: edge)
+    private let fullScreen = FullScreenWatch()
     private lazy var controlCenter = ControlCenterModel(runner: runner, cover: cover)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -161,6 +162,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         cover.start()
         controlCenter.start()
         place()
+        // The bar is out of the way while a window fills the screen.
+        fullScreen.onChange = { [weak self] full in
+            if full {
+                Popups.shared.close()
+                self?.panel?.orderOut(nil)
+            } else {
+                self?.panel?.orderFrontRegardless()
+            }
+        }
+        fullScreen.start()
         // Screens come and go (a monitor plugged in, the lid closed): the bar follows the main display.
         NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
@@ -182,6 +193,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         VorssaintModel.shared.stop()
         controlCenter.stop()
         cover.stop()
+        fullScreen.stop()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
