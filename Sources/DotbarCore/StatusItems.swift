@@ -84,9 +84,11 @@ public enum MoonPhase {
         return Int((positive / synodicMonth * 8).rounded()) % 8
     }
 
-    /// The weather-icons glyphs of icons.sh's MOON_PHASES, drawn in the light ink (the lit side shows, the dark side is
-    /// the box). Copied as they are, for parity: icons.sh has the same glyph at 5 and 7.
+    /// The weather-icons glyphs, drawn in the light ink (the lit side shows, the dark side is the box), from the solid
+    /// moons of the Nerd Font (E38D...E3A8): lit on the right while waxing, on the left while waning, each picked for how
+    /// much of the disc it lights (about 0.24, 0.50, 0.72, full, 0.72, 0.50, 0.26). icons.sh's list mixed this family with
+    /// the outlined one and repeated a glyph at 5 and 7.
     public static let glyphs = [
-        "\u{E38D}", "\u{E3D8}", "\u{E3DC}", "\u{E3DF}", "\u{E39B}", "\u{E3D1}", "\u{E3CE}", "\u{E3D1}",
+        "\u{E38D}", "\u{E38F}", "\u{E394}", "\u{E399}", "\u{E39B}", "\u{E39E}", "\u{E3A2}", "\u{E3A6}",
     ]
 }

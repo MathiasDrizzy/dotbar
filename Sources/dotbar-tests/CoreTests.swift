@@ -202,4 +202,14 @@ func coreTests() async {
     check("2026-10-24 is the full moon (moon.sh said 4)", MoonPhase.index(at: Date(timeIntervalSince1970: 1_792_871_376)) == 4)
     check("the known new moon is phase 0", MoonPhase.index(at: Date(timeIntervalSince1970: 947_182_440)) == 0)
     check("a week later is the first quarter", MoonPhase.index(at: Date(timeIntervalSince1970: 947_182_440 + 7.4 * 86_400)) == 2)
+
+    // The glyphs, measured in the font: waxing phases are lit on the right, waning ones on the left, and every phase has
+    // its own (the table used to repeat one at 5 and 7, so a waning gibbous moon was drawn as a crescent).
+    check("each of the eight phases has its own glyph", Set(MoonPhase.glyphs).count == 8)
+    check(
+        "the glyphs go new, waxing crescent, first quarter, waxing gibbous, full, waning gibbous, last quarter, waning crescent",
+        MoonPhase.glyphs == ["\u{E38D}", "\u{E38F}", "\u{E394}", "\u{E399}", "\u{E39B}", "\u{E39E}", "\u{E3A2}", "\u{E3A6}"])
+    // 2026-10-27 (three days past the full moon) was a waning gibbous moon.
+    let waningGibbous = MoonPhase.index(at: Date(timeIntervalSince1970: 1_792_871_376 + 3.4 * 86_400))
+    check("three days past the full moon is a waning gibbous moon", MoonPhase.glyphs[waningGibbous] == "\u{E39E}")
 }
