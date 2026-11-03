@@ -102,7 +102,7 @@ final class Popups {
     static let shared = Popups()
 
     enum Kind { case apple, front }
-    enum Align { case left, center }
+    typealias Align = PopupPlacement.Align
 
     private(set) var open: Kind?
     /// Each box's frame in the bar's window (SwiftUI's global space, top-left origin), as it is laid out.
@@ -121,10 +121,11 @@ final class Popups {
         hosting.rootView = list
         panel.contentView = hosting
         let size = hosting.fittingSize
-        // The box in screen coordinates; SketchyBar's popup.align=left put the popup at the item's left padding (2).
+        // The box in screen coordinates, the popup under it and inside the bar's screen: a long menu centered under the
+        // front app's pill began left of the screen.
         let box = CGRect(
             x: bar.frame.minX + anchor.minX, y: bar.frame.maxY - anchor.maxY, width: anchor.width, height: anchor.height)
-        let x = align == .left ? box.minX - 2 : box.midX - size.width / 2
+        let x = PopupPlacement.x(align: align, box: box, width: size.width, screen: bar.screen?.frame ?? bar.frame)
         // Under the bar; above it while the bar sits at the bottom for development.
         let atBottom = bar.screen.map { bar.frame.minY <= $0.frame.minY } ?? false
         let y = atBottom ? bar.frame.maxY : bar.frame.minY - size.height
