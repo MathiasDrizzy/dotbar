@@ -4,6 +4,7 @@ import Foundation
 
 await coreTests()
 await weatherTests()
+await weatherResilienceTests()
 await mediaTests()
 await frontAppTests()
 await boundaryTests()

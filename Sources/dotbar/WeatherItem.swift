@@ -15,6 +15,13 @@ final class WeatherModel {
     private(set) var label: String?
     /// The sky's glyph; the thermometer until a sky was read once. Offline, it keeps the last one.
     private(set) var icon = WeatherIcon.thermometer
+    /// What Location Services says, and whether the last temperature read failed: the box says why it is incomplete.
+    private(set) var location = LocationState.notDetermined
+    private(set) var readFailed = false
+    var hasPlace: Bool { place != nil }
+    /// The text to draw: the temperature, or (with no place to read it for) why there is none, never only a glyph.
+    var shownLabel: String? { label ?? WeatherNote.label(location: location, hasPlace: hasPlace) }
+    var note: String? { WeatherNote.reason(location: location, hasPlace: hasPlace, readFailed: readFailed) }
 
     @ObservationIgnored private let store = PlaceStore.standard
     @ObservationIgnored private let locator = Locator()
@@ -27,6 +34,8 @@ final class WeatherModel {
     @ObservationIgnored private var named: Place?
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var fallback: Timer?
+    @ObservationIgnored private var retry: Timer?
+    @ObservationIgnored private var failures = 0
     @ObservationIgnored private var wake: NSObjectProtocol?
     @ObservationIgnored private let session: URLSession = {
         // weather.sh's curl --max-time 10: a request that hangs is given up, and the box keeps its text.
@@ -60,6 +69,7 @@ final class WeatherModel {
             break  // nothing to draw until a fix names the place
         }
         locator.onFix = { [weak self] location in self?.fixed(location) }
+        locator.onState = { [weak self] state in self?.location = state }
         locator.start()
 
         let every = Timer(timeInterval: WeatherText.refreshInterval, repeats: true) { [weak self] _ in
@@ -82,6 +92,7 @@ final class WeatherModel {
     func stop() {
         timer?.invalidate()
         fallback?.invalidate()
+        retry?.invalidate()
         locator.stop()
         geocoder.cancelGeocode()
         if let wake { NSWorkspace.shared.notificationCenter.removeObserver(wake) }
@@ -126,8 +137,27 @@ final class WeatherModel {
             {
                 label = WeatherText.label(commune: place.commune, temperature: temperature)
                 if let sky = OpenMeteo.sky(in: data) { icon = WeatherIcon.glyph(for: sky) }
+                failures = 0
+                readFailed = false
+            } else {
+                failed()
             }
         } while gate.end()
+    }
+
+    /// A read that failed (often the network is not up yet after a login): try again soon, a few times, with a growing
+    /// wait; the 30-minute read, a wake or a move take over after that. One timer at a time, none while idle.
+    private func failed() {
+        failures += 1
+        readFailed = true
+        retry?.invalidate()
+        guard let wait = WeatherRetry.delay(afterFailures: failures) else { return }
+        let timer = Timer(timeInterval: wait, repeats: false) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refresh() }
+        }
+        timer.tolerance = wait / 4
+        RunLoop.main.add(timer, forMode: .common)
+        retry = timer
     }
 }
 
@@ -137,6 +167,9 @@ final class WeatherModel {
 @MainActor
 final class Locator: NSObject, CLLocationManagerDelegate {
     var onFix: ((CLLocation) -> Void)?
+    var onState: ((LocationState) -> Void)?
+    private var fixFailed = false
+    private var fixTries = 0
     private let manager = CLLocationManager()
 
     func start() {
@@ -165,7 +198,19 @@ final class Locator: NSObject, CLLocationManagerDelegate {
         return status == .authorizedAlways || status.rawValue == 3
     }
 
+    /// The state the box shows. The status and the last error go to the log (no coordinates), for
+    /// `log show --predicate 'process == "dotbar"'`.
+    private func report(_ note: String) {
+        let status = manager.authorizationStatus
+        let state: LocationState =
+            allowed ? (fixFailed ? .failed : .authorized)
+            : (status == .notDetermined ? .notDetermined : .denied)
+        NSLog("dotbar: location %@, status %d, state %@", note, Int(status.rawValue), "\(state)")
+        onState?(state)
+    }
+
     private func follow() {
+        report("authorization")
         guard allowed else { return }
         manager.startMonitoringSignificantLocationChanges()
         manager.requestLocation()
@@ -177,11 +222,28 @@ final class Locator: NSObject, CLLocationManagerDelegate {
 
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let last = locations.last else { return }
-        MainActor.assumeIsolated { onFix?(last) }
+        MainActor.assumeIsolated {
+            fixFailed = false
+            fixTries = 0
+            report("fix")
+            onFix?(last)
+        }
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        // No fix this time (no Wi-Fi around, denied): the remembered place stays; the next change or wake tries again.
+        // No fix this time (no Wi-Fi around, denied, still starting after a login): the remembered place stays; the next
+        // change or wake tries again, and one more try comes soon when Location Services was only slow.
+        let code = (error as NSError).code
+        MainActor.assumeIsolated {
+            fixFailed = true
+            report("error \(code)")
+            fixTries += 1
+            if allowed, code == CLError.locationUnknown.rawValue, let wait = WeatherRetry.delay(afterFailures: fixTries) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + wait) { [weak self] in
+                    MainActor.assumeIsolated { self?.locate() }
+                }
+            }
+        }
     }
 }
 
@@ -238,11 +300,12 @@ struct WeatherView: View {
                     }
                 }
                 .padding(.horizontal, 5)
-                if let label = model.label {
+                if let label = model.shownLabel {
                     Text(label).font(Theme.mediumFont).foregroundStyle(Theme.text).fixedSize().padding(.trailing, 5)
                 }
             }
         }
+        .help(model.note ?? "")
         // Its width moves the moon box, and with it the room the left side has (BarFit).
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { BarLayout.shared.weatherWidth = $0 }
     }
