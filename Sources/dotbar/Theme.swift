@@ -22,7 +22,7 @@ enum Theme {
     static let pillHeight: CGFloat = 26
     static let pillRadius: CGFloat = 5
     static let pillGap: CGFloat = 5
-    /// A workspace slot: 26 points (the icon width of the SketchyBar items).
+    /// A desktop slot: 26 points (the icon width of the SketchyBar items).
     static let slot: CGFloat = 26
     /// The room a Nerd Font icon at ICON_SIZE takes.
     static let iconWidth: CGFloat = 17

@@ -1,4 +1,4 @@
-// The core's checks: the bar's frame, the command runner, the workspaces, the stream, the status items.
+// The core's checks: the bar's frame, the command runner, the stream, the status items.
 import CoreGraphics
 import DotbarCore
 import Foundation
@@ -57,49 +57,6 @@ func coreTests() async {
     let launchesAfter = await shared.launchCount
     check("once it finished, the key runs again", later.stdout == "again\n" && launchesAfter == 2)
 
-    // Workspaces: what AeroSpace reports, then which pills show and how.
-    func row(_ id: String, _ monitor: Int = 1, visible: Bool = false, focused: Bool = false) -> WorkspaceRow {
-        WorkspaceRow(id: id, monitor: monitor, visible: visible || focused, focused: focused)
-    }
-    func ids(_ pills: [Pill]) -> [String] { pills.map(\.id) }
-
-    check(
-        "AeroSpace's workspace list is read",
-        Workspaces.parseRows("1|1|true|true\n2|1|false|false\ne1|2|true|false\n")
-            == [row("1", focused: true), row("2"), row("e1", 2, visible: true)])
-    check("lines that are not a workspace are skipped", Workspaces.parseRows("garbage\n|1|true|true\n").isEmpty)
-    check("the occupied workspaces are read", Workspaces.parseOccupied("1\n2\n2\n\n") == ["1", "2"])
-
-    var bar = Workspaces.layout(rows: [row("1", focused: true), row("2"), row("3")], occupied: ["1", "2"])
-    check("the focused and occupied workspaces show, an empty one does not", ids(bar.mac) == ["1", "2"] && bar.external.isEmpty)
-    check("the focused one is drawn as focused", bar.mac.first?.state == .focused && bar.mac.last?.state == .plain)
-
-    bar = Workspaces.layout(rows: [row("1", focused: true), row("e1", 2, visible: true), row("e2", 2)], occupied: [])
-    check(
-        "the other monitor's visible workspace shows in its own pill, eN drawn as N",
-        ids(bar.external) == ["e1"] && bar.external.first?.label == "1" && bar.external.first?.state == .visible)
-
-    bar = Workspaces.layout(rows: [row("1", focused: true), row("e1")], occupied: ["e1"])
-    check("once the monitor is unplugged its workspaces leave the bar, windows or not", ids(bar.mac) == ["1"])
-    bar = Workspaces.layout(rows: [row("1"), row("e1", focused: true)], occupied: [])
-    check("...unless one of them has the focus", ids(bar.mac) == ["e1"])
-
-    let crowded = [row("1", focused: true), row("2"), row("5"), row("6"), row("e1", 2, visible: true), row("e2", 2)]
-    bar = Workspaces.layout(rows: crowded, occupied: ["2", "5", "6", "e2"], cap: 3)
-    check(
-        "over the cap the group with more optional workspaces gives them up, the Mac's on a tie",
-        ids(bar.mac) == ["1"] && ids(bar.external) == ["e1", "e2"] && bar.hiddenMac == 3 && bar.hiddenExternal == 0,
-        "mac \(ids(bar.mac)) ext \(ids(bar.external)) hidden \(bar.hiddenMac)/\(bar.hiddenExternal)")
-    bar = Workspaces.layout(rows: [row("1", focused: true), row("e1", 2, visible: true)], occupied: [], cap: 1)
-    check("the focused and visible workspaces always stay", ids(bar.mac) == ["1"] && ids(bar.external) == ["e1"])
-
-    check(
-        "a workspace switch is read from the event stream",
-        AeroSpaceEvent.parse(#"{"_event":"focused-workspace-changed","prevWorkspace":"3","workspace":"2"}"#)
-            == .focusedWorkspace("2"))
-    check("other events are told apart", AeroSpaceEvent.parse(#"{"_event":"mode-changed","mode":"main"}"#) == .other)
-    check("a line that is not an event is ignored", AeroSpaceEvent.parse("not json") == nil)
-
     // A long-lived stream: lines arrive one by one, and it starts again when the command ends.
     final class Lines: @unchecked Sendable {
         let lock = NSLock()
@@ -118,25 +75,6 @@ func coreTests() async {
     let startsAtStop = stream.starts
     try? await Task.sleep(for: .seconds(0.6))
     check("a stopped stream stays stopped", stream.starts == startsAtStop)
-
-    // A look at the workspaces that started before a switch must not paint the old focus back.
-    var state = WorkspaceState()
-    state.apply(rows: [row("1", focused: true), row("2")], occupied: ["1", "2"], look: state.beginLook())
-    let early = state.beginLook()
-    state.focus("2")
-    let staleTaken = state.apply(rows: [row("1", focused: true), row("2")], occupied: ["1", "2"], look: early)
-    check("a look that started before a switch is dropped", !staleTaken && state.bar.mac.first(where: { $0.state == .focused })?.id == "2")
-    let older = state.beginLook()
-    let newer = state.beginLook()
-    state.focus("1")
-    state.apply(rows: [row("1", focused: true), row("2")], occupied: ["1", "2", "3"], look: newer)
-    check("...but which workspaces hold windows is taken even then", state.occupied == ["1", "2", "3"])
-    state.apply(rows: nil, occupied: ["1"], look: older)
-    check("...and a look that finishes after a newer one does not bring an older answer back", state.occupied == ["1", "2", "3"])
-    state.focus("2")
-    let freshTaken = state.apply(rows: [row("1"), row("2", focused: true), row("3")], occupied: ["1", "2", "3"], look: state.beginLook())
-    check("...and the next one is taken", freshTaken && ids(state.bar.mac) == ["1", "2", "3"])
-    check("a look AeroSpace did not answer keeps what is known", state.apply(rows: nil, occupied: nil, look: state.beginLook()) && ids(state.bar.mac) == ["1", "2", "3"])
 
     // A command that started others: on its time limit, they all end.
     let family = "3001\(getpid())"

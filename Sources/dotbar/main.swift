@@ -38,10 +38,10 @@ final class BarLayout {
 }
 
 /// The bar's content, in two zones around the camera housing as SketchyBar laid it out: Apple, the front app and the
-/// workspaces from the left edge, the moon and weather boxes ending at the housing; the track starting right after it,
+/// desktops from the left edge, the moon and weather boxes ending at the housing; the track starting right after it,
 /// the status boxes ending 37 points from the right edge. BarFit decides what narrows when it does not all fit.
 struct BarView: View {
-    let workspaces: WorkspacesModel
+    let spaces: SpacesModel
     let status: StatusModel
     let moon: MoonModel
     let weather: WeatherModel
@@ -65,8 +65,8 @@ struct BarView: View {
         let notch = BarFit.notch(screenWidth: layout.screenWidth, hasNotch: layout.hasNotch)
         let room = BarFit.leftRoom(
             notchLeft: notch.left, weatherWidth: layout.weatherWidth, leftInset: Self.leftInset,
-            fixedBeforeName: Self.leftFixed, external: !workspaces.bar.external.isEmpty)
-        let left = BarFit.left(room: room, natural: workspaces.natural)
+            fixedBeforeName: Self.leftFixed)
+        let left = BarFit.left(room: room, natural: spaces.natural)
         let chars = BarFit.mediaChars(
             notchRight: notch.right,
             vorssaintLeft: layout.screenWidth - Self.rightInset - Theme.leastStatusWidth - VorssaintModel.shared.spread)
@@ -78,7 +78,7 @@ struct BarView: View {
                     AppleView(runner: runner)
                     FrontAppView(model: frontApp)
                 }
-                WorkspacesView(model: workspaces)
+                SpacesView(model: spaces)
                 Spacer(minLength: 0)
                 MoonView(model: moon)
                 WeatherView(model: weather)
@@ -100,16 +100,10 @@ struct BarView: View {
         .background(alignment: cover.alignment) { CoverView(model: cover).frame(height: cover.height) }
         .task(id: left) {
             frontApp.setNameWidth(left.nameWidth)
-            workspaces.cap = left.cap
+            spaces.cap = left.cap
         }
         .task(id: chars) { media.maxLength = chars }
     }
-}
-
-/// Where AeroSpace's command line is: a login agent starts the bar with a bare PATH.
-func aerospacePath() -> String {
-    let candidates = ["/opt/homebrew/bin/aerospace", "/usr/local/bin/aerospace"]
-    return candidates.first { FileManager.default.isExecutableFile(atPath: $0) } ?? candidates[0]
 }
 
 @MainActor
@@ -117,14 +111,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var panel: BarPanel?
     private let edge: BarEdge = CommandLine.arguments.contains("--bottom") ? .bottom : .top
     private let runner = CommandRunner()
-    private lazy var workspaces = WorkspacesModel(runner: runner, aerospace: aerospacePath())
-    private lazy var stay = StayModel(runner: runner, aerospace: aerospacePath())
-    /// `ctlcenter stay` (mac/tools/ctlcenter): keeps AeroSpace from following macOS elsewhere when the app in front quits,
-    /// by putting Finder right behind it. Long-lived, started again if it ends; SketchyBar's rc used to start it.
-    private let finderBehind = LineStream(
-        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".local/bin/ctlcenter").path, ["stay"],
-        restartDelay: 5
-    ) { _ in }
+    private let spaces = SpacesModel()
     private let status = StatusModel()
     private let moon = MoonModel()
     private let weather = WeatherModel()
@@ -135,8 +122,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var controlCenter = ControlCenterModel(runner: runner, cover: cover)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        workspaces.onAsked = { [weak self] in self?.stay.asked() }
-        workspaces.onSwapping = { [weak self] swapping in self?.stay.setSwapping(swapping) }
         VorssaintModel.shared.onMenu = { [weak self] open in
             // The user may close the popover without the bar: the hold ends as soon as it is gone.
             if open {
@@ -145,14 +130,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.cover.release("vorssaint")
             }
         }
-        workspaces.start()
-        // `defaults write dev.dotfiles.dotbar stay -bool false` turns both stay helpers off, for an AeroSpace that keeps
-        // the workspace itself (`stay-on-workspace-when-app-quits`): no extra subscribe stream and no Finder brought
-        // forward at each switch (an app in front blinks).
-        if UserDefaults.standard.object(forKey: "stay") as? Bool ?? true {
-            stay.start()
-            finderBehind.start()
-        }
+        spaces.start()
         status.start()
         moon.start()
         weather.start()
@@ -182,9 +160,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// The long-lived commands end with the bar; left alone, a stream would only notice at its next event.
     func shutdown() {
-        workspaces.stop()
-        stay.stop()
-        finderBehind.stop()
+        spaces.stop()
         status.stop()
         moon.stop()
         weather.stop()
@@ -215,7 +191,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let panel = BarPanel(frame: frame)
         panel.contentView = NSHostingView(
             rootView: BarView(
-                workspaces: workspaces, status: status, moon: moon, weather: weather, media: media,
+                spaces: spaces, status: status, moon: moon, weather: weather, media: media,
                 frontApp: frontApp, runner: runner, cover: cover, controlCenter: controlCenter))
         panel.orderFrontRegardless()
         self.panel = panel

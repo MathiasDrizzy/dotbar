@@ -1,6 +1,6 @@
 import Foundation
 
-/// A long-lived command whose output is read line by line (`aerospace subscribe`, `media-control stream`): one process for
+/// A long-lived command whose output is read line by line (`media-control stream`): one process for
 /// the life of the bar instead of one per tick. When it ends (the app it talks to restarted), it is started again after
 /// `restartDelay`; `stop()` ends it for good. Only one process runs at a time, whatever the order of start, stop and the
 /// end of the previous one.

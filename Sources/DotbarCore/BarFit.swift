@@ -1,8 +1,8 @@
 import CoreGraphics
 
 /// Keeps every box of the bar from covering its neighbour or sitting under the camera housing, as fit.sh did:
-///   left  - Apple, the front app, the workspaces and the moon and weather boxes share the strip left of the housing.
-///           When they do not fit, the front app's name narrows first (down to `minNameWidth`), then workspaces leave
+///   left  - Apple, the front app, the desktops and the moon and weather boxes share the strip left of the housing.
+///           When they do not fit, the front app's name narrows first (down to `minNameWidth`), then desktops leave
 ///           (the pill says "+N").
 ///   right - the track right of the housing may only reach Vorssaint: it gets a character budget.
 public enum BarFit {
@@ -11,7 +11,7 @@ public enum BarFit {
     /// The front app name box (FrontAppItem): a longer name slides inside it.
     public static let nameWidth: CGFloat = 72
     public static let minNameWidth: CGFloat = 40
-    /// A workspace slot: its 26 points plus 1 of padding on each side.
+    /// A desktop slot: its 26 points plus 1 of padding on each side.
     public static let slotStep: CGFloat = 28
     /// The "+N" a capped pill shows.
     public static let spareForMore: CGFloat = 28
@@ -32,7 +32,7 @@ public enum BarFit {
 
     public struct Left: Equatable, Sendable {
         public let nameWidth: CGFloat
-        /// How many workspace slots fit; nil: all of them.
+        /// How many desktop slots fit; nil: all of them.
         public let cap: Int?
 
         public init(nameWidth: CGFloat, cap: Int?) {
@@ -41,8 +41,8 @@ public enum BarFit {
         }
     }
 
-    /// `room` is what the name and the workspace slots may use together: the strip left of the moon box, less every box
-    /// of fixed width. `natural` is how many workspaces would show without a cap.
+    /// `room` is what the name and the desktop slots may use together: the strip left of the moon box, less every box
+    /// of fixed width. `natural` is how many desktops would show without a cap.
     public static func left(room: CGFloat, natural: Int) -> Left {
         guard natural > 0 else { return Left(nameWidth: max(minNameWidth, min(nameWidth, room.rounded(.down))), cap: nil) }
         let slots = CGFloat(natural) * slotStep
@@ -53,16 +53,15 @@ public enum BarFit {
         return Left(nameWidth: minNameWidth, cap: max(1, cap))
     }
 
-    /// The room the name and the workspace slots share: from the left inset to the moon box, less the boxes of fixed
-    /// width before the name (Apple, the gap, the green block and arrow), the gap before the workspaces, and, with
-    /// another monitor, its pill's gap and monitor mark (its workspaces are slots like the Mac's).
+    /// The room the name and the desktop slots share: from the left inset to the moon box, less the boxes of fixed
+    /// width before the name (Apple, the gap, the green block and arrow) and the gap before the desktops.
     public static func leftRoom(
-        notchLeft: CGFloat, weatherWidth: CGFloat, leftInset: CGFloat, fixedBeforeName: CGFloat, external: Bool
+        notchLeft: CGFloat, weatherWidth: CGFloat, leftInset: CGFloat, fixedBeforeName: CGFloat
     ) -> CGFloat {
         let moonWidth: CGFloat = 25
         let beforeNotch: CGFloat = 3
         let moonLeft = notchLeft - beforeNotch - weatherWidth - gap - moonWidth
-        return moonLeft - gap - leftInset - fixedBeforeName - gap - (external ? gap + slotStep : 0)
+        return moonLeft - gap - leftInset - fixedBeforeName - gap
     }
 
     /// The characters the track may use, between the housing and Vorssaint.

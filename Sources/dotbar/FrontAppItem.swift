@@ -59,8 +59,8 @@ final class FrontAppModel {
         generation += 1
     }
 
-    /// `ctlcenter stay` brings Finder forward for a few milliseconds whenever an app comes to the front alone: read the app
-    /// in front once activations have stopped for a moment, or the name flashed "Finder" at every workspace switch.
+    /// Activations come in bursts (a desktop switch, an app quitting): read the app in front once they have stopped for a
+    /// moment, or the name flashed through every app that passed.
     private func updateSoon() {
         pending?.cancel()
         let work = DispatchWorkItem { [weak self] in MainActor.assumeIsolated { self?.update() } }
@@ -70,8 +70,8 @@ final class FrontAppModel {
     @ObservationIgnored private var pending: DispatchWorkItem?
     private static let settleSeconds = 0.12
 
-    /// The app in front now, not the one the notification names: a helper that brings Finder forward for a few milliseconds
-    /// (stay.sh) sends two notifications, and the last one handled must show the real front app.
+    /// The app in front now, not the one the notification names: several notifications can arrive in a row, and the last
+    /// one handled must show the real front app.
     private func update() {
         let front = NSWorkspace.shared.frontmostApplication?.localizedName ?? ""
         guard front != name || generation == 0 else { return }
