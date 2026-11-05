@@ -20,4 +20,13 @@ public enum BarGeometry {
         let y = edge == .top ? screen.maxY - height : screen.minY
         return CGRect(x: screen.minX, y: y, width: screen.width, height: height)
     }
+
+    /// The frame to put the bar back in when it is not where it should be (a Dock restart or another program moved the
+    /// window); nil when it is in place, within half a point.
+    public static func correction(current: CGRect, wanted: CGRect) -> CGRect? {
+        let same = [
+            current.minX - wanted.minX, current.minY - wanted.minY, current.width - wanted.width, current.height - wanted.height,
+        ].allSatisfy { abs($0) <= 0.5 }
+        return same ? nil : wanted
+    }
 }

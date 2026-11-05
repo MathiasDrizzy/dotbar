@@ -156,6 +156,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ) { [weak self] _ in
             MainActor.assumeIsolated { self?.place() }
         }
+        // Whatever moves the bar (the Dock restarting, another program moving the window) puts it back at once; a desktop
+        // switch and the desktops' slow read check it too, in case a move sent nothing.
+        NotificationCenter.default.addObserver(forName: NSWindow.didMoveNotification, object: panel, queue: .main) {
+            [weak self] _ in
+            MainActor.assumeIsolated { self?.keepInPlace() }
+        }
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.keepInPlace() }
+        }
+        spaces.onRead = { [weak self] in self?.keepInPlace() }
     }
 
     /// The long-lived commands end with the bar; left alone, a stream would only notice at its next event.
@@ -174,6 +186,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         shutdown()
+    }
+
+    /// Puts the bar back on its edge when it drifted (BarGeometry.correction); a bar in place costs one comparison.
+    private func keepInPlace() {
+        guard let panel, let screen = NSScreen.screens.first else { return }
+        let wanted = BarGeometry.frame(on: screen.frame, edge: edge)
+        if let fix = BarGeometry.correction(current: panel.frame, wanted: wanted) {
+            NSLog("dotbar: bar was at y=%d, put back", Int(panel.frame.minY))
+            panel.setFrame(fix, display: true)
+            panel.orderFrontRegardless()
+        }
     }
 
     private func place() {

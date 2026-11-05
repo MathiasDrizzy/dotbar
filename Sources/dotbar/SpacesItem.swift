@@ -43,6 +43,8 @@ final class SpacesModel {
         didSet { if cap != oldValue { redraw() } }
     }
 
+    /// Called after each read (the slow one included): the bar checks its own place then.
+    @ObservationIgnored var onRead: (() -> Void)?
     @ObservationIgnored private let source: DesktopSource
     @ObservationIgnored private var displays: [DisplayDesktops] = []
     @ObservationIgnored private var observers: [(NotificationCenter, NSObjectProtocol)] = []
@@ -84,6 +86,7 @@ final class SpacesModel {
 
     /// Nothing read keeps what is drawn; an answer replaces it.
     private func refresh() {
+        onRead?()
         guard let read = source.read() else { return }
         displays = read
         redraw()
